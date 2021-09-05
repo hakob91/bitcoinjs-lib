@@ -240,6 +240,12 @@ class Psbt {
     c.__EXTRACTED_TX = undefined;
     return this;
   }
+  setPayload(payload) {
+    const c = this.__CACHE;
+    const unsignedTx = c.__TX;
+    unsignedTx.setPayload(payload);
+    return this;
+  }
   extractTransaction(disableFeeCheck) {
     if (!this.data.inputs.every(isFinalized)) throw new Error('Not finalized');
     const c = this.__CACHE;
@@ -248,7 +254,13 @@ class Psbt {
     }
     if (c.__EXTRACTED_TX) return c.__EXTRACTED_TX;
     const tx = c.__TX.clone();
-    inputFinalizeGetAmts(this.data.inputs, tx, c, true);
+    inputFinalizeGetAmts(
+      this.data.inputs,
+      tx,
+      c,
+      true,
+      disableFeeCheck || false,
+    );
     return tx;
   }
   getFeeRate() {
@@ -853,7 +865,7 @@ function getTxCacheValue(key, name, inputs, c) {
   } else {
     tx = c.__TX.clone();
   }
-  inputFinalizeGetAmts(inputs, tx, c, mustFinalize);
+  inputFinalizeGetAmts(inputs, tx, c, mustFinalize, false);
   if (key === '__FEE_RATE') return c.__FEE_RATE;
   else if (key === '__FEE') return c.__FEE;
 }
@@ -1227,7 +1239,13 @@ function addNonWitnessTxCache(cache, input, inputIndex) {
     },
   });
 }
-function inputFinalizeGetAmts(inputs, tx, cache, mustFinalize) {
+function inputFinalizeGetAmts(
+  inputs,
+  tx,
+  cache,
+  mustFinalize,
+  disableFeeCheck,
+) {
   let inputAmount = 0;
   inputs.forEach((input, idx) => {
     if (mustFinalize && input.finalScriptSig)
@@ -1247,14 +1265,16 @@ function inputFinalizeGetAmts(inputs, tx, cache, mustFinalize) {
     }
   });
   const outputAmount = tx.outs.reduce((total, o) => total + o.value, 0);
-  const fee = inputAmount - outputAmount;
-  if (fee < 0) {
-    throw new Error('Outputs are spending more than Inputs');
+  if (!disableFeeCheck) {
+    const fee = inputAmount - outputAmount;
+    if (fee < 0) {
+      throw new Error('Outputs are spending more than Inputs');
+    }
+    const bytes = tx.virtualSize();
+    cache.__FEE = fee;
+    cache.__FEE_RATE = Math.floor(fee / bytes);
   }
-  const bytes = tx.virtualSize();
-  cache.__FEE = fee;
   cache.__EXTRACTED_TX = tx;
-  cache.__FEE_RATE = Math.floor(fee / bytes);
 }
 function nonWitnessUtxoTxFromCache(cache, input, inputIndex) {
   const c = cache.__NON_WITNESS_UTXO_TX_CACHE;

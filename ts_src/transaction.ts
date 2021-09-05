@@ -139,6 +139,7 @@ export class Transaction {
   locktime: number = 0;
   ins: Input[] = [];
   outs: Output[] = [];
+  payload?: Buffer = undefined;
 
   isCoinbase(): boolean {
     return (
@@ -190,6 +191,10 @@ export class Transaction {
     );
   }
 
+  setPayload(payload?: Buffer): void {
+    this.payload = payload;
+  }
+
   hasWitnesses(): boolean {
     return this.ins.some(x => {
       return x.witness.length !== 0;
@@ -219,6 +224,10 @@ export class Transaction {
       this.outs.reduce((sum, output) => {
         return sum + 8 + varSliceSize(output.script);
       }, 0) +
+      (this.payload
+        ? varSliceSize(this.payload)
+        : 0
+      ) + 
       (hasWitnesses
         ? this.ins.reduce((sum, input) => {
             return sum + vectorSize(input.witness);
@@ -248,6 +257,8 @@ export class Transaction {
         value: txOut.value,
       };
     });
+
+    newTx.payload = this.payload;
 
     return newTx;
   }
@@ -507,6 +518,9 @@ export class Transaction {
     }
 
     bufferWriter.writeUInt32(this.locktime);
+
+    if (this.payload) 
+      bufferWriter.writeVarSlice(this.payload);
 
     // avoid slicing unless necessary
     if (initialOffset !== undefined)

@@ -73,6 +73,7 @@ export declare class Psbt {
     addInput(inputData: PsbtInputExtended): this;
     addOutputs(outputDatas: PsbtOutputExtended[]): this;
     addOutput(outputData: PsbtOutputExtended): this;
+    setPayload(payload?: Buffer): this;
     extractTransaction(disableFeeCheck?: boolean): Transaction;
     getFeeRate(): number;
     getFee(): number;

@@ -24,9 +24,11 @@ export declare class Transaction {
     locktime: number;
     ins: Input[];
     outs: Output[];
+    payload?: Buffer;
     isCoinbase(): boolean;
     addInput(hash: Buffer, index: number, sequence?: number, scriptSig?: Buffer): number;
     addOutput(scriptPubKey: Buffer, value: number): number;
+    setPayload(payload?: Buffer): void;
     hasWitnesses(): boolean;
     weight(): number;
     virtualSize(): number;

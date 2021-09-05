@@ -44,6 +44,7 @@ class Transaction {
     this.locktime = 0;
     this.ins = [];
     this.outs = [];
+    this.payload = undefined;
   }
   static fromBuffer(buffer, _NO_STRICT) {
     const bufferReader = new bufferutils_1.BufferReader(buffer);
@@ -140,6 +141,9 @@ class Transaction {
       }) - 1
     );
   }
+  setPayload(payload) {
+    this.payload = payload;
+  }
   hasWitnesses() {
     return this.ins.some(x => {
       return x.witness.length !== 0;
@@ -165,6 +169,7 @@ class Transaction {
       this.outs.reduce((sum, output) => {
         return sum + 8 + varSliceSize(output.script);
       }, 0) +
+      (this.payload ? varSliceSize(this.payload) : 0) +
       (hasWitnesses
         ? this.ins.reduce((sum, input) => {
             return sum + vectorSize(input.witness);
@@ -191,6 +196,7 @@ class Transaction {
         value: txOut.value,
       };
     });
+    newTx.payload = this.payload;
     return newTx;
   }
   /**
@@ -386,6 +392,7 @@ class Transaction {
       });
     }
     bufferWriter.writeUInt32(this.locktime);
+    if (this.payload) bufferWriter.writeVarSlice(this.payload);
     // avoid slicing unless necessary
     if (initialOffset !== undefined)
       return buffer.slice(initialOffset, bufferWriter.offset);
