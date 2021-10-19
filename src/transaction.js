@@ -87,6 +87,9 @@ class Transaction {
         throw new Error('Transaction has superfluous witness data');
     }
     tx.locktime = bufferReader.readUInt32();
+    try {
+      tx.payload = bufferReader.readVarSlice();
+    } catch (e) {}
     if (_NO_STRICT) return tx;
     if (bufferReader.offset !== buffer.length)
       throw new Error('Transaction has unexpected data');

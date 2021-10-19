@@ -115,6 +115,9 @@ export class Transaction {
     }
 
     tx.locktime = bufferReader.readUInt32();
+    try {
+      tx.payload = bufferReader.readVarSlice();
+    } catch(e) { }
 
     if (_NO_STRICT) return tx;
     if (bufferReader.offset !== buffer.length)
